@@ -1,30 +1,61 @@
-from itertools import chain
+"""
+Created for _________
 
+@author: lakhani
+"""
+
+# Find the nth iteration of a string
 def find_nth(haystack, needle, n) -> int:
     start = haystack.find(needle)
+
     while start >= 0 and n > 1:
         start = haystack.find(needle, start+len(needle))
         n -= 1
+   
     return start
 
-# def return_simple_grid(n_columns, grid_table):
-#     # For first row
-#     first_plus_index = 1
-#     last_plus_index = find_nth(grid_table, '+', n_columns + 1)
-#     middle_plus_list = []
-#     for i in range((n_columns)-1):
-#         i += 2
-#         middle_plus_index = find_nth(grid_table, '+', i)
-#         middle_plus_list.append(middle_plus_index)
-#     starting_string = '='*(last_plus_index - first_plus_index + 1)
-#     for i in range(len(middle_plus_list)):
-#         index = middle_plus_list[i]
-#         starting_string = starting_string[:index] + ' ' + starting_string[index + 1:]
-#     grid_table = grid_table.replace(grid_table[first_plus_index:last_plus_index + 1], starting_string)
-#     grid_table = grid_table.replace("|", " ")
-#     return grid_table
+# Returns a very rudimentary simple table from grid table, initial iteration of rstGridtoSimpleTable
+def prelim_return_simple_table(n_columns, grid_table):
+    # For first row
+    first_plus_index = 1
+    last_plus_index = find_nth(grid_table, '+', n_columns + 1)
+    middle_plus_list = []
+    for i in range((n_columns)-1):
+        i += 2
+        middle_plus_index = find_nth(grid_table, '+', i)
+        middle_plus_list.append(middle_plus_index)
+    starting_string = '='*(last_plus_index - first_plus_index + 1)
+    for i in range(len(middle_plus_list)):
+        index = middle_plus_list[i]
+        starting_string = starting_string[:index] + ' ' + starting_string[index + 1:]
+    grid_table = grid_table.replace(grid_table[first_plus_index:last_plus_index + 1], starting_string)
+    grid_table = grid_table.replace("|", " ")
+   
+    return grid_table
 
-def remove_equals_vert(grid_table, first_plus_index, last_plus_index, row_length, row_length_2, num_rows, starting_string, header):
+# Replace +------+ with =
+def replace_plus_dash(grid_table, n_columns):
+
+    first_plus_index = 1
+    last_plus_index = find_nth(grid_table, '+', n_columns + 1)
+    middle_plus_list = []
+    for i in range((n_columns)-1):
+        i += 2
+        middle_plus_index = find_nth(grid_table, '+', i)
+        middle_plus_list.append(middle_plus_index)
+    row_length = last_plus_index - first_plus_index + 1
+    row_length_2 = find_nth(grid_table, '\n', 2) - find_nth(grid_table, '\n', 1)
+    num_rows = int((len(grid_table)-1)/row_length_2)
+    starting_string = '='*(row_length)
+    for i in range(len(middle_plus_list)):
+        index = middle_plus_list[i]
+        starting_string = starting_string[:index-1] + ' ' + starting_string[index:]
+
+    return grid_table, num_rows, first_plus_index, last_plus_index, starting_string, row_length, row_length_2, middle_plus_list
+
+# Removes extra equals after replace_plus_dash is called
+def remove_extra_equals(grid_table, first_plus_index, last_plus_index, row_length, row_length_2, num_rows, starting_string, header):
+
     count = 0
     for i in range(1, num_rows-1):
         fpi_adj = first_plus_index+row_length_2*i
@@ -36,44 +67,34 @@ def remove_equals_vert(grid_table, first_plus_index, last_plus_index, row_length
             elif substring.find(starting_string) != -1:
                 grid_table = grid_table[:fpi_adj] + ' '*row_length + grid_table[lpi_adj + 1:]
                 count += 1
-            # elif substring.find(starting_string) == -1:
-            #     grid_table = grid_table.replace("|", " ")
         else:
             if substring.find(starting_string) != -1:
                 grid_table = grid_table[:fpi_adj] + ' '*row_length + grid_table[lpi_adj + 1:]
                 count += 1
-            # elif substring.find(starting_string) == -1:
-            #     grid_table = grid_table.replace("|", " ")
+   
     return grid_table
 
-def remake_equals(biggest_len, flat_val_len, grid_table, first_plus_index, last_plus_index, middle_plus_list, row_length, row_length_2, row_range, row_of_interest, phrase_length):
-    # count = 0
+# Remakes the equals and text column width if a new row has a larger set of characters for one line than the previous largest
+def remake_column_width(biggest_len, flat_val_len, grid_table, first_plus_index, middle_plus_list, row_length_2, row_range, row_of_interest, phrase_length):
+
     for i in range(row_range + 1):
-    # for i in range(12):
         fpi_adj = first_plus_index+(row_length_2 + biggest_len)*(i)
         mpi_adj = middle_plus_list[0]+flat_val_len+(row_length_2 + biggest_len)*(i)
-
-        # print(grid_table[fpi_adj:mpi_adj + 1])
-        # print("Truth?", grid_table[fpi_adj:mpi_adj + 1].find('='*3))
         if grid_table[fpi_adj:mpi_adj + 1].find('='*3) != -1:
             grid_table = grid_table[:mpi_adj] + '='*(biggest_len-flat_val_len) + grid_table[mpi_adj:]
-            # if biggest_len > count:
-            #     count = biggest_len
         elif i == row_of_interest - 1:
             grid_table = grid_table[:mpi_adj + phrase_length] + ' '*((biggest_len-flat_val_len) - phrase_length) + grid_table[mpi_adj + phrase_length:]
-            # if biggest_len > count:
-            #     count = biggest_len
         elif i == row_of_interest:
             grid_table = grid_table[:mpi_adj] + ' '*((biggest_len-flat_val_len)) + grid_table[mpi_adj:]
-            # if biggest_len > count:
-            #     count = biggest_len
         else:
             grid_table = grid_table[:mpi_adj] + ' '*(biggest_len-flat_val_len) + grid_table[mpi_adj:]
-            # if biggest_len > count:
-            #     count = biggest_len
+    
     return grid_table
 
-def big_boy(grid_table, first_plus_index, last_plus_index, middle_plus_list, row_length, row_length_2, num_rows, starting_string):
+# Iterates through text, finds rows where there are multiple lines, combines into one line
+# Then calls remake_column_width if text combined into one line is bigger than previous column width
+def big_boy(grid_table, first_plus_index, last_plus_index, middle_plus_list, row_length_2, num_rows):
+
     indicator = False
     empty = []
     count = 1
@@ -121,34 +142,18 @@ def big_boy(grid_table, first_plus_index, last_plus_index, middle_plus_list, row
 
         if (len(col_sub) - len(grid_table[fpi_adj_1:mpi_adj_1+1])) + biggest_len > biggest_len:
             biggest_len = len(col_sub) - len(grid_table[fpi_adj_1:mpi_adj_1+1]) + biggest_len
-            grid_table = remake_equals(biggest_len, flat_val_len, grid_table, first_plus_index, last_plus_index, middle_plus_list, row_length, row_length_2, num_rows, empty[n], len(col_sub_2.strip()))
+            grid_table = remake_column_width(biggest_len, flat_val_len, grid_table, first_plus_index, middle_plus_list, row_length_2, num_rows, empty[n], len(col_sub_2.strip()))
 
         flat_val_len += len(col_sub) - len(grid_table[fpi_adj_1:mpi_adj_1+1])
-
+    
     return grid_table
 
-def complete_simple_grid(n_columns, grid_table, header):
-    # For first row
-    first_plus_index = 1
-    last_plus_index = find_nth(grid_table, '+', n_columns + 1)
-    middle_plus_list = []
-    for i in range((n_columns)-1):
-        i += 2
-        middle_plus_index = find_nth(grid_table, '+', i)
-        middle_plus_list.append(middle_plus_index)
-    row_length = last_plus_index - first_plus_index + 1
-    row_length_2 = find_nth(grid_table, '\n', 2) - find_nth(grid_table, '\n', 1)
-    num_rows = int((len(grid_table)-1)/row_length_2)
-    starting_string = '='*(row_length)
-    for i in range(len(middle_plus_list)):
-        index = middle_plus_list[i]
-        starting_string = starting_string[:index-1] + ' ' + starting_string[index:]
+def return_simple_table(n_columns, grid_table, header):
+    
+    grid_table, num_rows, first_plus_index, last_plus_index, starting_string, row_length, row_length_2, middle_plus_list = replace_plus_dash(grid_table, n_columns)
     grid_table = grid_table.replace(grid_table[first_plus_index:last_plus_index + 1], starting_string)
-
-    grid_table = remove_equals_vert(grid_table, first_plus_index, last_plus_index, row_length, row_length_2, num_rows, starting_string, header)
-
-    grid_table = big_boy(grid_table, first_plus_index, last_plus_index, middle_plus_list, row_length, row_length_2, num_rows, starting_string)
-
+    grid_table = remove_extra_equals(grid_table, first_plus_index, last_plus_index, row_length, row_length_2, num_rows, starting_string, header)
+    grid_table = big_boy(grid_table, first_plus_index, last_plus_index, middle_plus_list, row_length_2, num_rows)
     grid_table = grid_table.replace('|', ' ')
 
     return grid_table
@@ -176,6 +181,6 @@ grid_table = """
 +-------------------------+-----------------+------+-----------------+
 """
 
-simple_grid = complete_simple_grid(n_columns, grid_table, header)
-# print(grid_table)
-print(simple_grid)
+simple_table = return_simple_table(n_columns, grid_table, header)
+
+print(simple_table)
